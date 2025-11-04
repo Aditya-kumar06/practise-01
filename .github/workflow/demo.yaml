@@ -1,0 +1,53 @@
+name: Deploy to EC2 via SSH
+
+on:
+  push:
+    branches:
+      # Set this to the branch you want to deploy from
+      - main 
+  # Allows you to run the workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      # --- Optional: Build steps for your application (e.g., Node.js, React, etc.) ---
+      # - name: 🛠️ Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      # - name: 📦 Install dependencies
+      #   run: npm install
+      # - name: 🏗️ Build project
+      #   run: npm run build
+      # --------------------------------------------------------------------------
+
+      - name: 📂 Deploy files via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          # GitHub Secrets must be set up for these variables
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "." # The directory/files to copy ('.' means the whole repo)
+          target: "/home/${{ secrets.EC2_USER }}/app_dir" # Target directory on EC2
+
+      - name: ⚙️ Run remote commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Navigate to the deployment directory
+            cd /home/${{ secrets.EC2_USER }}/app_dir
+
+            # Example: Install dependencies and restart service (customize these commands)
+            # sudo npm install # If you copied your package.json
+            # sudo systemctl restart your-app-service
+            echo "Deployment finished and post-deployment script executed."
